@@ -1,0 +1,9 @@
+<resources>
+    <!-- A dark, no-action-bar theme so there is no white flash before Compose
+         draws the dashboard. The real colours are set by Compose (Theme.kt). -->
+    <style name="Theme.AutomotiveCarPropApp" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/car_background</item>
+        <item name="android:statusBarColor">@color/car_background</item>
+        <item name="android:navigationBarColor">@color/car_background</item>
+    </style>
+</resources>

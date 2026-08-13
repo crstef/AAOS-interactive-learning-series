@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple Vehicle Property Dashboard in AAOS — Capstone Project 1</title>
+<meta name="description" content="An interactive walkthrough of an Android Automotive OS dashboard app built with Kotlin and Jetpack Compose, including a live replica you can drive.">
+<style>
+:root{
+  --orange:#F26522; --orange-lt:#FF7A3D;
+  --green:#2ECC71; --amber:#F5A623; --red:#E53935;
+  --bg:#0E1016; --surface:#1B1F2A; --raised:#232838;
+  --text:#ECEFF1; --muted:#8A94A6; --line:#2A3040;
+  --code-bg:#12151E;
+  --r:18px; --maxw:1180px;
+}
+html[data-theme="day"]{
+  --bg:#F2F4F8; --surface:#FFFFFF; --raised:#E9EDF4;
+  --text:#1A1F2B; --muted:#61708A; --line:#D7DEE9;
+  --code-bg:#1B1F2A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Segoe UI",Roboto,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  transition:background .35s ease,color .35s ease;
+}
+
+/* ---------- chrome ---------- */
+#bar{
+  position:fixed;top:0;left:0;right:0;height:56px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 20px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--orange);
+  display:grid;place-items:center;flex:none}
+.logo svg{width:18px;height:18px;fill:#fff}
+#bar .t{font-weight:700;font-size:15px;letter-spacing:.1px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+#bar .sub{color:var(--muted);font-size:13px;white-space:nowrap}
+.spacer{flex:1}
+.chip{font-size:12px;color:var(--muted);border:1px solid var(--line);
+  border-radius:999px;padding:4px 11px;white-space:nowrap}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);color:var(--orange);cursor:pointer;display:grid;
+  place-items:center;flex:none;transition:transform .15s ease,background .2s ease}
+.iconbtn:hover{transform:scale(1.07)}
+.iconbtn svg{width:19px;height:19px;fill:currentColor}
+#prog{position:fixed;top:56px;left:0;height:3px;background:var(--orange);z-index:41;
+  width:0;transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+/* ---------- slides ---------- */
+#deck{position:absolute;inset:59px 0 74px 0}
+.slide{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  padding:34px 26px 30px;
+  opacity:0;visibility:hidden;transform:translateY(14px);
+  transition:opacity .38s ease,transform .38s ease,visibility .38s;
+}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.wrap{max-width:var(--maxw);margin:0 auto}
+.eyebrow{color:var(--orange);font-size:12.5px;font-weight:800;letter-spacing:1.6px;
+  text-transform:uppercase;margin-bottom:10px}
+h1{font-size:clamp(30px,5vw,54px);line-height:1.08;font-weight:800;letter-spacing:-.8px}
+h2{font-size:clamp(23px,3.4vw,36px);line-height:1.15;font-weight:800;letter-spacing:-.4px}
+.lede{color:var(--muted);font-size:clamp(14px,1.7vw,18px);line-height:1.55;
+  margin-top:12px;max-width:74ch}
+.hr{height:1px;background:var(--line);margin:22px 0}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px 20px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:7px;display:flex;
+  align-items:center;gap:9px}
+.card p{color:var(--muted);font-size:14px;line-height:1.55}
+.num{width:25px;height:25px;border-radius:7px;background:var(--orange);color:#fff;
+  font-size:13px;font-weight:800;display:grid;place-items:center;flex:none}
+
+.kv{display:flex;justify-content:space-between;gap:16px;padding:9px 0;
+  border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border-bottom:0}
+.kv b{font-weight:600}
+.kv span{color:var(--muted);text-align:right;font-family:ui-monospace,Consolas,monospace;
+  font-size:13px}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--orange);font-size:11.5px;letter-spacing:1.1px;
+  text-transform:uppercase;padding:0 12px 9px 0;border-bottom:1px solid var(--line);
+  font-weight:800}
+td{padding:9px 12px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+code,.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+td code{font-size:12.5px;color:var(--orange-lt);background:color-mix(in srgb,var(--orange) 12%,transparent);
+  padding:1.5px 6px;border-radius:5px;white-space:nowrap}
+
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:13px;
+  padding:15px 17px;overflow-x:auto;font-size:13px;line-height:1.62;color:#E6E9F0}
+pre code{font-size:inherit;background:none;padding:0;color:inherit;white-space:pre}
+.k{color:#FF9E64}.s{color:#9ECE6A}.c{color:#5C6478;font-style:italic}
+.n{color:#7AA2F7}.f{color:#7DCFFF}.p{color:#BB9AF7}
+
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--raised);
+  border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;
+  color:var(--text)}
+.ok{color:var(--green);font-weight:800}
+.no{color:var(--red);font-weight:800}
+.warn{color:var(--amber);font-weight:800}
+.note{border-left:3px solid var(--orange);background:color-mix(in srgb,var(--orange) 8%,transparent);
+  border-radius:0 11px 11px 0;padding:13px 17px;font-size:14px;line-height:1.6;
+  color:var(--text)}
+.note b{color:var(--orange)}
+
+/* ---------- title slide ---------- */
+.hero{min-height:100%;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;gap:6px}
+.hero .badge{display:inline-block;border:1px solid var(--orange);color:var(--orange);
+  border-radius:999px;padding:6px 16px;font-size:12px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:20px}
+.specs{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:34px}
+.spec{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+  padding:13px 22px;min-width:126px}
+.spec .l{color:var(--muted);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+  font-weight:700}
+.spec .v{font-size:15px;font-weight:700;margin-top:5px}
+
+/* ---------- dashboard replica ---------- */
+.dash{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px;display:grid;gap:9px;align-content:start}
+.dashtop{display:flex;align-items:center;gap:10px}
+.dashtop .nm{font-weight:800;font-size:16px}
+.live{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12.5px;
+  color:var(--green)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.drow{display:grid;grid-template-columns:1fr 1.25fr;gap:11px}
+@media(max-width:820px){.drow{grid-template-columns:1fr}}
+.panel{background:var(--bg);border-radius:15px;padding:12px}
+html[data-theme="day"] .panel{background:var(--raised)}
+.gwrap{display:grid;place-items:center;position:relative}
+.gnum{position:absolute;text-align:center;pointer-events:none}
+.gnum .v{font-size:36px;font-weight:800;line-height:1}
+.gnum .u{font-size:12px;font-weight:800;color:var(--orange);letter-spacing:1px}
+.gears{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.gear{height:44px;border-radius:11px;border:1px solid var(--line);background:transparent;
+  color:var(--muted);font-size:18px;font-weight:800;cursor:pointer;transition:all .18s ease}
+.gear.act{background:var(--orange);color:#fff;border-color:var(--orange)}
+.gear:hover:not(.act){border-color:var(--orange)}
+.lbl{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;margin-bottom:9px}
+.badgei{width:29px;height:29px;border-radius:50%;background:var(--orange);display:grid;
+  place-items:center;flex:none}
+.badgei svg{width:16px;height:16px;fill:#fff}
+.track{height:14px;border-radius:7px;background:color-mix(in srgb,var(--muted) 22%,transparent);
+  overflow:hidden}
+.fill{height:100%;border-radius:7px;transition:width .35s ease,background .3s ease}
+.meta{color:var(--muted);font-size:12.5px;margin-top:7px}
+.alert{background:var(--red);color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;
+  padding:2.5px 8px;margin-left:auto;letter-spacing:.5px}
+.icards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.icard{background:var(--bg);border-radius:14px;padding:10px;text-align:center}
+html[data-theme="day"] .icard{background:var(--raised)}
+.icard .l{color:var(--muted);font-size:11.5px;margin-top:5px}
+.icard .v{font-size:15px;font-weight:800;margin-top:2px}
+.icard .badgei{width:26px;height:26px}
+.icard .badgei svg{width:14px;height:14px}
+
+.ctl{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px}
+.ctl h3{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--orange);margin-bottom:15px}
+.ctlrow{margin-bottom:16px}
+.ctlrow .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
+.ctlrow .top b{font-weight:600}
+.ctlrow .top span{color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;
+  border-radius:3px;background:color-mix(in srgb,var(--muted) 30%,transparent);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;
+  border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid var(--surface);
+  box-shadow:0 1px 5px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-thumb{width:19px;height:19px;border-radius:50%;
+  background:var(--orange);cursor:pointer;border:3px solid var(--surface)}
+.btn{width:100%;padding:11px;border-radius:11px;border:1px solid var(--orange);
+  background:var(--orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+  transition:filter .18s ease}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;color:var(--orange)}
+.hint{color:var(--muted);font-size:12px;line-height:1.55;margin-top:12px}
+
+/* ---------- shots ---------- */
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.shots{grid-template-columns:1fr}}
+.shot{background:var(--surface);border:1px solid var(--line);border-radius:15px;
+  overflow:hidden}
+.shot img{width:100%;display:block}
+.shot .cap{padding:11px 14px;font-size:13px}
+.shot .cap b{display:block;font-weight:700;margin-bottom:2px}
+.shot .cap span{color:var(--muted);font-size:12.5px}
+
+/* ---------- flow diagram ---------- */
+.flowbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;overflow-x:auto}
+.flowbox svg{display:block;margin:0 auto;min-width:640px;max-width:100%;height:auto}
+
+/* ---------- nav ---------- */
+#nav{position:fixed;bottom:0;left:0;right:0;height:74px;z-index:40;
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.navb{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);color:var(--text);cursor:pointer;display:grid;place-items:center;
+  transition:all .18s ease}
+.navb:hover:not(:disabled){background:var(--orange);color:#fff;border-color:var(--orange)}
+.navb:disabled{opacity:.3;cursor:default}
+.navb svg{width:17px;height:17px;fill:currentColor}
+#dots{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:56vw}
+.dt{width:8px;height:8px;border-radius:50%;background:var(--line);border:0;cursor:pointer;
+  padding:0;transition:all .22s ease}
+.dt.on{background:var(--orange);width:24px;border-radius:4px}
+.dt:hover{background:var(--orange-lt)}
+#count{position:fixed;bottom:26px;right:22px;font-size:12.5px;color:var(--muted);
+  font-family:ui-monospace,Consolas,monospace;z-index:41}
+@media(max-width:700px){#count{display:none}#dots{max-width:44vw}}
+.hidesm{display:inline}
+@media(max-width:780px){.hidesm{display:none}}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18.9 6.6A1.5 1.5 0 0017.5 5.5h-11A1.5 1.5 0 005.1 6.6L3 12.7V21a1 1 0 001 1h1a1 1 0 001-1v-1h12v1a1 1 0 001 1h1a1 1 0 001-1v-8.3zM6.8 7.5h10.4l1.3 3.8H5.5zM6.5 17a1.5 1.5 0 111.5-1.5A1.5 1.5 0 016.5 17m11 0a1.5 1.5 0 111.5-1.5 1.5 1.5 0 01-1.5 1.5"/></svg></div>
+  <div class="t">Simple Vehicle Property Dashboard <span class="sub hidesm">· AAOS Capstone 1</span></div>
+  <div class="spacer"></div>
+  <div class="chip hidesm">Kotlin · Jetpack Compose</div>
+  <button class="iconbtn" id="theme" title="Toggle day / night theme" aria-label="Toggle day or night theme"></button>
+</div>
+<div id="prog"></div>
+
+<main id="deck">
+
+<!-- 1 ─ TITLE -->
+<section class="slide on"><div class="wrap hero">
+  <span class="badge">Capstone Project 1</span>
+  <h1>Simple Vehicle Property<br>Dashboard App in AAOS</h1>
+  <p class="lede" style="max-width:62ch">Reading real-time vehicle signals through the Car API and rendering them on an automotive-optimised dashboard.</p>
+  <div class="specs">
+    <div class="spec"><div class="l">Platform</div><div class="v">Android Automotive</div></div>
+    <div class="spec"><div class="l">Language</div><div class="v">Kotlin</div></div>
+    <div class="spec"><div class="l">UI</div><div class="v">Jetpack Compose</div></div>
+    <div class="spec"><div class="l">Duration</div><div class="v">5 working days</div></div>
+  </div>
+  <p class="hint" style="margin-top:34px">Use <b>←</b> <b>→</b> or the arrows below to move through the deck.<br>Slide 10 is a live dashboard you can drive.</p>
+</div></section>
+
+<!-- 2 ─ THE BRIEF -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">The brief</div>
+  <h2>What was asked for</h2>
+  <p class="lede">Build a basic AAOS app in Android Studio that reads real-time vehicle signals and displays the data on the UI.</p>
+  <div class="hr"></div>
+  <div class="grid g3">
+    <div class="card">
+      <h3><span class="num">1</span>Objectives</h3>
+      <p>Connect to the vehicle HAL layer through the AAOS Car API · retrieve real-time vehicle data · display it on an automotive-optimised dashboard · update automatically when signals change.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>Requirements</h3>
+      <p>Individual project, five working days. Must run on the Android Automotive emulator, demonstrate real-time updates, and follow automotive UI/UX best practices.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">3</span>Deliverables</h3>
+      <p>A working AAOS application · presentation slides · screenshots of the app running in the emulator · source code with documentation.</p>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="note"><b>Optional enhancements offered by the brief:</b> a low-fuel alert, day/night theme customisation, and a historical speed trend. All three were implemented — see slide 10.</div>
+</div></section>
+
+<!-- 3 ─ ENVIRONMENT -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 1 — Environment</div>
+  <h2>Getting 25 GB of toolchain onto a full machine</h2>
+  <p class="lede">The development laptop — Windows 11, Intel i5, 20 GB RAM — had almost no space left on <code>C:</code>. An AAOS setup needs roughly 20–25 GB, and essentially all of it defaults to the system drive.</p>
+  <div class="hr"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>Variables first, install second</h3>
+      <p style="margin-bottom:13px">Every Android tool decides where to write at <em>first run</em>. Set these after installing and you get a split installation the SDK manager cannot reconcile.</p>
+      <div class="kv"><b>ANDROID_HOME</b><span>D:\Android\Sdk</span></div>
+      <div class="kv"><b>ANDROID_SDK_ROOT</b><span>D:\Android\Sdk</span></div>
+      <div class="kv"><b>ANDROID_USER_HOME</b><span>D:\Android\.android</span></div>
+      <div class="kv"><b>ANDROID_AVD_HOME</b><span>D:\Android\.android\avd</span></div>
+      <div class="kv"><b>GRADLE_USER_HOME</b><span>D:\Android\.gradle</span></div>
+      <div class="kv"><b>JAVA_HOME</b><span>D:\Android\jdk\jdk-17…</span></div>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>CPU virtualisation</h3>
+      <p style="margin-bottom:13px">The automotive emulator is an x86_64 VM. Without hardware acceleration it does boot — slowly enough to look like a hang rather than an error.</p>
+      <pre><code><span class="c"># enable VT-x / AMD-V in BIOS, or turn on</span>
+<span class="c"># the Windows Hypervisor Platform feature</span>
+
+emulator.exe -accel-check</code></pre>
+      <p style="margin-top:13px">This is the one step that cannot be scripted, because it lives in firmware. Check it <em>first</em> — every later problem is easier to diagnose once acceleration is known good.</p>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="note"><b>ANDROID_AVD_HOME matters most.</b> Without it the emulator's 7 GB data partition and its snapshots land back on <code>C:</code>, regardless of where the SDK itself was installed.</div>
+</div></section>
+
+<!-- 4 ─ EMULATOR -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 2 — Emulator</div>
+  <h2>The automotive virtual device</h2>
+  <p class="lede">A phone AVD will install this APK and run it happily — and then never deliver a single vehicle property, with no error to explain why.</p>
+  <div class="hr"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>AVD as configured</h3>
+      <div class="kv"><b>System image</b><span>android-33 · automotive · x86_64</span></div>
+      <div class="kv"><b>Screen</b><span>1024 × 768 · density 160</span></div>
+      <div class="kv"><b>RAM / VM heap</b><span>3072 MB / 512 MB</span></div>
+      <div class="kv"><b>CPU cores</b><span>4</span></div>
+      <div class="kv"><b>Data partition</b><span>7000 MB</span></div>
+      <div class="kv"><b>GPU</b><span>enabled · auto</span></div>
+      <p style="margin-top:13px">3072 MB is a deliberate compromise: the automotive image is heavier than a phone image, but Android Studio and Gradle need their share of 20 GB too.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>Where <code>android.car.jar</code> comes from</h3>
+      <p style="margin-bottom:13px">Not the standard SDK, and <em>not</em> the system image — the image is what the emulator runs, and contributes nothing to the compile classpath. It ships inside the installed platform:</p>
+      <pre><code>Sdk/platforms/android-34/optional/
+        └── android.car.jar</code></pre>
+      <p style="margin:13px 0">Registered there as <code>android.car</code>, which is exactly the name Gradle resolves:</p>
+      <pre><code><span class="k">android</span> {
+    compileSdk = <span class="n">34</span>
+    <span class="f">useLibrary</span>(<span class="s">"android.car"</span>)
+}</code></pre>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="note"><b>Confirm the image really is automotive</b> before debugging anything else — <code class="mono">adb shell pm list features | findstr automotive</code> should return <code class="mono">feature:android.hardware.type.automotive</code>.</div>
+</div></section>
+
+<!-- 5 ─ ARCHITECTURE -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 3 — Architecture</div>
+  <h2>From a vehicle signal to a redrawn pixel</h2>
+  <p class="lede">Five Kotlin source files. Only one of them imports <code>android.car</code> — the dashboard itself knows nothing about the Car API, which is why it renders in an Android Studio preview with no emulator at all.</p>
+  <div class="hr"></div>
+  <div class="flowbox">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Data flow from the vehicle HAL through the Car service and CarPropertyManager into a Compose recomposition">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#F26522"/>
+        </marker>
+        <style>
+          .bx{fill:none;stroke:#F26522;stroke-width:1.6;rx:12}
+          .bt{fill:currentColor;font:700 13px ui-monospace,Consolas,monospace}
+          .bs{fill:#8A94A6;font:11px "Segoe UI",sans-serif}
+          .ln{stroke:#F26522;stroke-width:1.6;marker-end:url(#ar)}
+          .lt{fill:#8A94A6;font:italic 10.5px "Segoe UI",sans-serif}
+        </style>
+      </defs>
+      <g color="currentColor">
+        <rect class="bx" x="20" y="20" width="180" height="52" rx="12"/>
+        <text class="bt" x="110" y="43" text-anchor="middle">Vehicle HAL</text>
+        <text class="bs" x="110" y="60" text-anchor="middle">emulator's simulated car</text>
+
+        <line class="ln" x1="110" y1="76" x2="110" y2="106"/>
+        <rect class="bx" x="20" y="110" width="180" height="52" rx="12"/>
+        <text class="bt" x="110" y="133" text-anchor="middle">Car service</text>
+        <text class="bs" x="110" y="150" text-anchor="middle">android.car</text>
+
+        <line class="ln" x1="204" y1="136" x2="256" y2="136"/>
+        <text class="lt" x="230" y="128" text-anchor="middle">createCar()</text>
+
+        <rect class="bx" x="260" y="110" width="190" height="52" rx="12"/>
+        <text class="bt" x="355" y="133" text-anchor="middle">CarPropertyManager</text>
+        <text class="bs" x="355" y="150" text-anchor="middle">registerCallback()</text>
+
+        <line class="ln" x1="454" y1="136" x2="506" y2="136"/>
+        <text class="lt" x="480" y="128" text-anchor="middle">on change</text>
+
+        <rect class="bx" x="510" y="98" width="180" height="76" rx="12"/>
+        <text class="bt" x="600" y="122" text-anchor="middle">onChangeEvent</text>
+        <text class="bs" x="600" y="139" text-anchor="middle">unit conversion,</text>
+        <text class="bs" x="600" y="154" text-anchor="middle">gear map, history</text>
+
+        <line class="ln" x1="600" y1="94" x2="600" y2="64"/>
+        <rect class="bx" x="510" y="14" width="180" height="46" rx="12"/>
+        <text class="bt" x="600" y="35" text-anchor="middle">VehicleUiState</text>
+        <text class="bs" x="600" y="51" text-anchor="middle">mutableStateOf · copy()</text>
+
+        <line class="ln" x1="694" y1="37" x2="746" y2="37"/>
+        <rect class="bx" x="750" y="14" width="130" height="46" rx="12"/>
+        <text class="bt" x="815" y="35" text-anchor="middle">Compose</text>
+        <text class="bs" x="815" y="51" text-anchor="middle">recomposition</text>
+
+        <line class="ln" x1="815" y1="64" x2="815" y2="106"/>
+        <rect class="bx" x="720" y="110" width="160" height="52" rx="12"/>
+        <text class="bt" x="800" y="133" text-anchor="middle">DashboardScreen</text>
+        <text class="bs" x="800" y="150" text-anchor="middle">redraws what changed</text>
+
+        <text class="bs" x="450" y="215" text-anchor="middle" style="font-size:12px">Nothing polls. Nothing calls "update the UI". One assignment, and Compose redraws exactly the composables that read the changed value.</text>
+      </g>
+    </svg>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid g4">
+    <div class="card"><h3>MainActivity.kt</h3><p>Requests runtime permissions, then connects. Hosts the Compose tree.</p></div>
+    <div class="card"><h3>VehicleDashboard&#8203;ViewModel.kt</h3><p>The only file importing <code>android.car</code>. Connects, subscribes, converts.</p></div>
+    <div class="card"><h3>VehicleUiState.kt</h3><p>Immutable snapshot of everything displayed. Defaults to <code>"--"</code>, never <code>0</code>.</p></div>
+    <div class="card"><h3>DashboardScreen.kt</h3><p>Gauge, sparkline, gear row, meters, cards. No vehicle logic.</p></div>
+  </div>
+</div></section>
+
+<!-- 6 ─ CAR API -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 4 — Car API</div>
+  <h2>Connect, subscribe, receive</h2>
+  <div class="hr"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>Connecting</h3>
+      <pre><code>car = Car.<span class="f">createCar</span>(<span class="f">getApplication</span>())
+cpm = car?.<span class="f">getCarManager</span>(Car.PROPERTY_SERVICE)
+          <span class="k">as?</span> CarPropertyManager
+
+<span class="k">if</span> (cpm == <span class="k">null</span>) {
+    Log.<span class="f">e</span>(TAG, <span class="s">"CarPropertyManager unavailable"</span>)
+    <span class="k">return</span>
+}</code></pre>
+      <p style="margin-top:13px">The <code>as?</code> is doing real work. On a non-automotive image <code>getCarManager</code> returns null, and a hard cast would throw before any error handling could run.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>Subscribing</h3>
+      <pre><code><span class="k">for</span> (p <span class="k">in</span> liveProps) {
+    <span class="k">try</span> {
+        cpm?.<span class="f">registerCallback</span>(callback, p,
+            CarPropertyManager.SENSOR_RATE_ONCHANGE)
+    } <span class="k">catch</span> (e: Exception) {
+        Log.<span class="f">w</span>(TAG, <span class="s">"register failed for </span>$p<span class="s">"</span>, e)
+    }
+}</code></pre>
+      <p style="margin-top:13px"><code>SENSOR_RATE_ONCHANGE</code> means the platform pushes on change rather than at a fixed rate — an idle vehicle costs nothing. Each property is guarded individually so one unsupported ID cannot cost you the other five.</p>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card">
+    <h3><span class="num">3</span>Receiving — one callback, dispatched on property ID</h3>
+    <pre><code><span class="k">override fun</span> <span class="f">onChangeEvent</span>(value: CarPropertyValue&lt;*&gt;) {
+    <span class="k">val</span> num = <span class="f">asFloat</span>(value.value)
+    <span class="k">when</span> (value.propertyId) {
+
+        VehiclePropertyIds.PERF_VEHICLE_SPEED -> {
+            <span class="k">val</span> mph     = ((num ?: <span class="n">0f</span>) * <span class="n">2.23694f</span>).<span class="f">roundToInt</span>()      <span class="c">// m/s → MPH</span>
+            <span class="k">val</span> history = (uiState.speedHistory + mph).<span class="f">takeLast</span>(<span class="n">40</span>)  <span class="c">// the whole "speed graph" feature</span>
+            uiState = uiState.<span class="f">copy</span>(speedMph = mph, speedText = mph.<span class="f">toString</span>(), speedHistory = history)
+        }
+
+        VehiclePropertyIds.GEAR_SELECTION -> {
+            <span class="k">val</span> g = (value.value <span class="k">as?</span> Int) ?: <span class="n">0</span>
+            uiState = uiState.<span class="f">copy</span>(gearRaw = g, gearText = <span class="f">gearLabel</span>(g))
+        }
+        <span class="c">// … fuel, battery, range, odometer</span>
+    }
+}</code></pre>
+  </div>
+</div></section>
+
+<!-- 7 ─ PROPERTIES & UNITS -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 5 — Properties</div>
+  <h2>The API returns raw machine values</h2>
+  <p class="lede">Every single one needs work before a driver can read it. Metres per second, millilitres, bit constants — none of it is displayable as it arrives.</p>
+  <div class="hr"></div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Property</th><th>Raw unit</th><th>Conversion</th><th>Displayed</th></tr></thead>
+      <tbody>
+        <tr><td><code>PERF_VEHICLE_SPEED</code></td><td>metres / second</td><td>× 2.23694</td><td>55 MPH</td></tr>
+        <tr><td><code>GEAR_SELECTION</code></td><td>int bit constant</td><td>mapped</td><td>D (Drive)</td></tr>
+        <tr><td><code>FUEL_LEVEL</code></td><td>millilitres</td><td>÷ capacity × 100</td><td>15000 ml (100 %)</td></tr>
+        <tr><td><code>EV_BATTERY_LEVEL</code></td><td>percent on this image</td><td>clamped 0–100</td><td>100 %</td></tr>
+        <tr><td><code>RANGE_REMAINING</code></td><td>metres</td><td>÷ 1000</td><td>310 km</td></tr>
+        <tr><td><code>PERF_ODOMETER</code></td><td>kilometres</td><td>thousands separator</td><td>12,345 km</td></tr>
+        <tr><td><code>INFO_MAKE / MODEL / YEAR</code></td><td>string / numeric</td><td>read once at connect</td><td>info cards</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>Gear is a bit flag, not a number</h3>
+      <p style="margin-bottom:11px">The values are not sequential and cannot be compared as magnitudes. Park is <code>0x4</code>; Drive is <code>0x8</code>.</p>
+      <pre><code><span class="k">val</span> gears = <span class="f">listOf</span>(<span class="n">0x0004</span> to <span class="s">"P"</span>, <span class="n">0x0002</span> to <span class="s">"R"</span>,
+                    <span class="n">0x0001</span> to <span class="s">"N"</span>, <span class="n">0x0008</span> to <span class="s">"D"</span>)</code></pre>
+      <p style="margin-top:11px">Ordered <b>P R N D</b> for the driver, not numerically. The raw int is kept in state so the row highlights by exact match rather than by parsing a label.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>Millilitres are meaningless alone</h3>
+      <p style="margin-bottom:11px"><code>15000</code> tells a driver nothing without the tank size — so <code>INFO_FUEL_CAPACITY</code> is read at connect and cached.</p>
+      <pre><code><span class="k">val</span> pct = <span class="k">if</span> (fuelCapacityMl > <span class="n">0f</span>)
+    ((ml / fuelCapacityMl) * <span class="n">100f</span>).<span class="f">roundToInt</span>().<span class="f">coerceIn</span>(<span class="n">0</span>, <span class="n">100</span>)
+<span class="k">else</span> -<span class="n">1</span>                          <span class="c">// sentinel: capacity unknown</span>
+
+<span class="k">val</span> low = <span class="k">if</span> (pct >= <span class="n">0</span>) pct &lt; <span class="n">15</span> <span class="k">else</span> ml &lt; <span class="n">5000f</span></code></pre>
+      <p style="margin-top:11px">Even the low-fuel threshold degrades gracefully — 15 % when capacity is known, an absolute 5000 ml when it is not.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 8 ─ PERMISSIONS -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 6 — Permissions</div>
+  <h2>Declaring a car permission is not enough</h2>
+  <p class="lede">This is the single most common way to lose an afternoon on AAOS. Four of the five permissions here are <b>dangerous</b>, which means they must <em>also</em> be requested at runtime — or every read throws <code>SecurityException</code>.</p>
+  <div class="hr"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>Declared in the manifest</h3>
+      <pre><code>&lt;uses-permission android:name=
+    <span class="s">"android.car.permission.CAR_INFO"</span> /&gt;        <span class="c">← normal</span>
+&lt;uses-permission android:name=
+    <span class="s">"android.car.permission.CAR_SPEED"</span> /&gt;       <span class="c">← dangerous</span>
+&lt;uses-permission android:name=
+    <span class="s">"android.car.permission.CAR_POWERTRAIN"</span> /&gt;  <span class="c">← dangerous</span>
+&lt;uses-permission android:name=
+    <span class="s">"android.car.permission.CAR_ENERGY"</span> /&gt;      <span class="c">← dangerous</span>
+&lt;uses-permission android:name=
+    <span class="s">"android.car.permission.CAR_MILEAGE"</span> /&gt;     <span class="c">← dangerous</span></code></pre>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>And requested at runtime</h3>
+      <pre><code><span class="k">private val</span> permissionLauncher =
+    <span class="f">registerForActivityResult</span>(
+        ActivityResultContracts.<span class="f">RequestMultiplePermissions</span>()
+    ) {
+        viewModel.<span class="f">connect</span>()
+    }
+
+<span class="k">if</span> (<span class="f">hasAllPermissions</span>()) viewModel.<span class="f">connect</span>()
+<span class="k">else</span> permissionLauncher.<span class="f">launch</span>(requiredPermissions)</code></pre>
+      <p style="margin-top:13px"><code>connect()</code> runs from the result callback <em>regardless of the answer</em>. A partial grant should still produce a partly-working dashboard — granted properties work, the rest show <code>--</code>.</p>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">3</span>Which permission unlocks what</h3>
+      <div class="kv"><b>CAR_INFO</b><span>INFO_MAKE / MODEL / YEAR / FUEL_CAPACITY</span></div>
+      <div class="kv"><b>CAR_SPEED</b><span>PERF_VEHICLE_SPEED</span></div>
+      <div class="kv"><b>CAR_POWERTRAIN</b><span>GEAR_SELECTION</span></div>
+      <div class="kv"><b>CAR_ENERGY</b><span>FUEL_LEVEL · EV_BATTERY_LEVEL · RANGE_REMAINING</span></div>
+      <div class="kv"><b>CAR_MILEAGE</b><span>PERF_ODOMETER</span></div>
+    </div>
+    <div class="card">
+      <h3><span class="num">4</span>Usable while driving</h3>
+      <p style="margin-bottom:11px">An app that does not declare itself distraction-optimised is blocked the moment the vehicle moves — exactly when a dashboard is most useful. This is a read-only display requiring no interaction, so it qualifies:</p>
+      <pre><code>&lt;meta-data
+    android:name=<span class="s">"distractionOptimized"</span>
+    android:value=<span class="s">"true"</span> /&gt;</code></pre>
+    </div>
+  </div>
+</div></section>
+
+<!-- 9 ─ WHAT CANNOT BE READ -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Step 7 — Limits</div>
+  <h2>What the platform will not give you</h2>
+  <p class="lede">The brief lists engine RPM, engine temperature and door status among the signals to fetch. They are not on the dashboard — and no amount of manifest declaration or user consent would change that.</p>
+  <div class="hr"></div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Signal</th><th>Property</th><th>Permission required</th><th>Protection level</th></tr></thead>
+      <tbody>
+        <tr><td>Engine RPM</td><td><code>ENGINE_RPM</code></td><td><code>CAR_ENGINE_DETAILED</code></td><td><span class="no">signature|privileged</span></td></tr>
+        <tr><td>Coolant temperature</td><td><code>ENGINE_COOLANT_TEMP</code></td><td><code>CAR_ENGINE_DETAILED</code></td><td><span class="no">signature|privileged</span></td></tr>
+        <tr><td>Oil temperature</td><td><code>ENGINE_OIL_TEMP</code></td><td><code>CAR_ENGINE_DETAILED</code></td><td><span class="no">signature|privileged</span></td></tr>
+        <tr><td>Door open / lock</td><td><code>DOOR_POS</code> · <code>DOOR_LOCK</code></td><td><code>CONTROL_CAR_DOORS</code></td><td><span class="no">signature|privileged</span></td></tr>
+        <tr><td colspan="4" style="padding-top:14px"></td></tr>
+        <tr><td>Speed</td><td><code>PERF_VEHICLE_SPEED</code></td><td><code>CAR_SPEED</code></td><td><span class="ok">dangerous</span> — grantable</td></tr>
+        <tr><td>Gear</td><td><code>GEAR_SELECTION</code></td><td><code>CAR_POWERTRAIN</code></td><td><span class="ok">dangerous</span> — grantable</td></tr>
+        <tr><td>Fuel / battery / range</td><td><code>FUEL_LEVEL</code> …</td><td><code>CAR_ENERGY</code></td><td><span class="ok">dangerous</span> — grantable</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="num">1</span>Why that word decides everything</h3>
+      <p>A <code>signature|privileged</code> permission is granted only to an app signed with the platform key, or installed into <code>/system/priv-app</code> and allow-listed there. Neither is available to an app installed with <code>adb install</code>. <code>pm grant</code> does not help either — it only operates on <code>dangerous</code> runtime permissions and returns an error for these.</p>
+    </div>
+    <div class="card">
+      <h3><span class="num">2</span>So it shows <code>--</code>, not <code>0</code></h3>
+      <p>Every text field in <code>VehicleUiState</code> defaults to <code>"--"</code>. A zero on a dashboard is a reading; a dash is an absence. Conflating the two is how a driver ends up trusting a gauge that was never connected.</p>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="note"><b>Property access is a three-way gate.</b> Does the HAL provide it · does a permission exist at a level this app can hold · has the user granted it. Most time lost to "why is my property null" comes from assuming the first gate is the only one.</div>
+</div></section>
+
+<!-- 10 ─ LIVE REPLICA -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">The result — interactive</div>
+  <h2>Drive the dashboard</h2>
+  <p class="lede">A faithful replica of <code>DashboardScreen.kt</code> — same 270° gauge sweep and colour thresholds, same rolling 40-sample sparkline, same 15 % low-fuel alert. Move the controls: this is what injecting signals into the emulator looks like.</p>
+  <div class="hr" style="margin:14px 0"></div>
+  <div class="grid" style="grid-template-columns:1.65fr 1fr;gap:14px" id="demogrid">
+
+    <div class="dash">
+      <div class="dashtop">
+        <div class="badgei"><svg viewBox="0 0 24 24"><path d="M18.9 6.6A1.5 1.5 0 0017.5 5.5h-11A1.5 1.5 0 005.1 6.6L3 12.7V21a1 1 0 001 1h1a1 1 0 001-1v-1h12v1a1 1 0 001 1h1a1 1 0 001-1v-8.3zM6.8 7.5h10.4l1.3 3.8H5.5zM6.5 17a1.5 1.5 0 111.5-1.5A1.5 1.5 0 016.5 17m11 0a1.5 1.5 0 111.5-1.5 1.5 1.5 0 01-1.5 1.5"/></svg></div>
+        <div class="nm">Vehicle Dashboard</div>
+        <div class="live"><span class="dot"></span> Live</div>
+      </div>
+
+      <div class="drow">
+        <div class="panel">
+          <div style="text-align:center;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:1px">SPEED</div>
+          <div class="gwrap">
+            <svg viewBox="0 0 200 200" style="width:100%;max-width:164px;height:auto">
+              <circle cx="100" cy="100" r="82" fill="none" stroke="currentColor" stroke-width="19"
+                      stroke-linecap="round" opacity=".18"
+                      stroke-dasharray="386.4 515.2" transform="rotate(135 100 100)"/>
+              <circle id="arc" cx="100" cy="100" r="82" fill="none" stroke="var(--orange)" stroke-width="19"
+                      stroke-linecap="round" stroke-dasharray="0 515.2" transform="rotate(135 100 100)"
+                      style="transition:stroke-dasharray .35s ease,stroke .3s ease"/>
+            </svg>
+            <div class="gnum"><div class="v" id="spdTxt">0</div><div class="u">MPH</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="lbl"><span class="badgei"><svg viewBox="0 0 24 24"><path d="M18.9 6.6A1.5 1.5 0 0017.5 5.5h-11A1.5 1.5 0 005.1 6.6L3 12.7V21a1 1 0 001 1h1a1 1 0 001-1v-1h12v1a1 1 0 001 1h1a1 1 0 001-1v-8.3zM6.8 7.5h10.4l1.3 3.8H5.5zM6.5 17a1.5 1.5 0 111.5-1.5A1.5 1.5 0 016.5 17m11 0a1.5 1.5 0 111.5-1.5 1.5 1.5 0 01-1.5 1.5"/></svg></span> Gear</div>
+          <div class="gears">
+            <button class="gear act" data-g="4">P</button>
+            <button class="gear" data-g="2">R</button>
+            <button class="gear" data-g="1">N</button>
+            <button class="gear" data-g="8">D</button>
+          </div>
+          <div style="height:12px"></div>
+          <div class="lbl"><span class="badgei"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2m0 18a8 8 0 118-8 8 8 0 01-8 8m4.2-12.6L11 12.6l-2.8-1.2 1.1 3 3.4-1.4z"/></svg></span> Speed trend (live)</div>
+          <div style="background:var(--bg);border-radius:11px;padding:7px" id="sparkbox">
+            <svg viewBox="0 0 300 62" preserveAspectRatio="none" style="width:100%;height:62px;display:block">
+              <polyline id="spark" fill="none" stroke="var(--orange)" stroke-width="2.4"
+                        stroke-linecap="round" stroke-linejoin="round" points=""/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="drow" style="grid-template-columns:1fr 1fr">
+        <div class="panel">
+          <div class="lbl"><span class="badgei"><svg viewBox="0 0 24 24"><path d="M18 10h-1V7a2 2 0 00-2-2H7a2 2 0 00-2 2v13h12v-8h1v4a2 2 0 004 0v-7l-4-4v3a2 2 0 002 2M7 7h8v4H7z"/></svg></span> Fuel Level <span class="alert" id="fuelAlert" style="display:none">LOW FUEL</span></div>
+          <div class="track"><div class="fill" id="fuelBar" style="width:100%;background:var(--green)"></div></div>
+          <div class="meta" id="fuelTxt">15000 ml (100%)</div>
+        </div>
+        <div class="panel">
+          <div class="lbl"><span class="badgei"><svg viewBox="0 0 24 24"><path d="M18 10h-1V7a2 2 0 00-2-2H7a2 2 0 00-2 2v13h12v-8h1v4a2 2 0 004 0v-7l-4-4v3a2 2 0 002 2M7 7h8v4H7z"/></svg></span> Battery</div>
+          <div class="track"><div class="fill" id="battBar" style="width:100%;background:var(--green)"></div></div>
+          <div class="meta" id="battTxt">100%</div>
+        </div>
+      </div>
+
+      <div class="icards">
+        <div class="icard"><div class="badgei" style="margin:0 auto"><svg viewBox="0 0 24 24"><path d="M2 20h20v2H2zM4 18h3v-6H4zm5 0h3V8H9zm5 0h3V4h-3zm5 0h3v-9h-3z"/></svg></div><div class="l">Manufacturer</div><div class="v">Toy Vehicle</div></div>
+        <div class="icard"><div class="badgei" style="margin:0 auto"><svg viewBox="0 0 24 24"><path d="M18.9 6.6A1.5 1.5 0 0017.5 5.5h-11A1.5 1.5 0 005.1 6.6L3 12.7V21a1 1 0 001 1h1a1 1 0 001-1v-1h12v1a1 1 0 001 1h1a1 1 0 001-1v-8.3zM6.8 7.5h10.4l1.3 3.8H5.5z"/></svg></div><div class="l">Car Model</div><div class="v">Speedy Model</div></div>
+        <div class="icard"><div class="badgei" style="margin:0 auto"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2m0 16H5V10h14z"/></svg></div><div class="l">Model Year</div><div class="v">2020</div></div>
+      </div>
+    </div>
+
+    <div class="ctl">
+      <h3>Inject signals</h3>
+      <div class="ctlrow">
+        <div class="top"><b>Speed</b><span id="oSpd">0 MPH</span></div>
+        <input type="range" id="sSpd" min="0" max="160" value="0">
+      </div>
+      <div class="ctlrow">
+        <div class="top"><b>Fuel level</b><span id="oFuel">15000 ml</span></div>
+        <input type="range" id="sFuel" min="0" max="15000" value="15000" step="100">
+      </div>
+      <div class="ctlrow">
+        <div class="top"><b>Battery</b><span id="oBatt">100 %</span></div>
+        <input type="range" id="sBatt" min="0" max="100" value="100">
+      </div>
+      <button class="btn" id="drive">▶ Simulate a drive</button>
+      <div style="height:9px"></div>
+      <button class="btn ghost" id="reset">Reset</button>
+      <p class="hint">On the real emulator these values come from <b>Extended controls ▸ Car data</b>, or from
+        <code class="mono">adb shell cmd car_service inject-vhal-event</code>. The app itself is never touched —
+        that is what makes the updates real-time rather than polled.</p>
+      <p class="hint">Gauge turns <span class="warn">amber</span> above 55 % of full scale and
+        <span class="no">red</span> above 80 %. Fuel below 15 % raises the alert.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 11 ─ SCREENSHOTS -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">The result — on the emulator</div>
+  <h2>Running on Android Automotive</h2>
+  <p class="lede">Captured from the AAOS emulator with <code>adb shell screencap</code>. Signals were injected from the emulator's Car data panel while the app was running and untouched.</p>
+  <div class="hr"></div>
+  <div class="shots">
+    <div class="shot">
+      <img src="module-01-vehicle-property-dashboard/screenshots/01-parked.png" alt="The dashboard parked in P: gauge at 0 MPH, green Live indicator, fuel and battery full">
+      <div class="cap"><b>Parked, connected</b><span>Gear P highlighted · gauge at 0 · Live indicator green</span></div>
+    </div>
+    <div class="shot">
+      <img src="module-01-vehicle-property-dashboard/screenshots/02-driving-55mph.png" alt="The dashboard at 55 MPH in Drive: gauge arc partly filled, speed trend rising">
+      <div class="cap"><b>55 MPH in Drive</b><span>Gear D · gauge swept · trend graph rising</span></div>
+    </div>
+    <div class="shot">
+      <img src="module-01-vehicle-property-dashboard/screenshots/03-speed-trend.png" alt="The dashboard showing the speed-trend sparkline after sustained speed">
+      <div class="cap"><b>Speed trend</b><span>Rolling 40-sample history at steady speed</span></div>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="note"><b>This is the real-time requirement being demonstrated.</b> Nothing was tapped inside the app between these captures — the values changed because the platform pushed them.</div>
+</div></section>
+
+<!-- 12 ─ COVERAGE -->
+<section class="slide"><div class="wrap">
+  <div class="eyebrow">Against the brief</div>
+  <h2>Requirements coverage</h2>
+  <div class="hr"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Objectives</h3>
+      <table>
+        <tbody>
+          <tr><td>Connect to the vehicle HAL via the Car API</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Retrieve real-time vehicle data</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Automotive-optimised dashboard UI</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Update automatically on signal change</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Run on the Android Automotive emulator</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Handle CarApp permissions</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Follow automotive UI/UX best practices</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Optional enhancements — all three</h3>
+      <table>
+        <tbody>
+          <tr><td>Alerts (low fuel warning)</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Theme customisation (day / night)</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Historical trends (speed graph)</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+        </tbody>
+      </table>
+      <div style="height:14px"></div>
+      <h3>Deliverables</h3>
+      <table>
+        <tbody>
+          <tr><td>Working AAOS application</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Presentation slides</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Emulator screenshots</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+          <tr><td>Source code with documentation</td><td style="text-align:right"><span class="ok">✓</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid g4">
+    <div class="card" style="text-align:center"><div style="font-size:30px;font-weight:800;color:var(--orange)">9</div><p>vehicle properties read</p></div>
+    <div class="card" style="text-align:center"><div style="font-size:30px;font-weight:800;color:var(--orange)">5</div><p>Kotlin source files</p></div>
+    <div class="card" style="text-align:center"><div style="font-size:30px;font-weight:800;color:var(--orange)">5</div><p>car permissions handled</p></div>
+    <div class="card" style="text-align:center"><div style="font-size:30px;font-weight:800;color:var(--orange)">0</div><p>polling loops</p></div>
+  </div>
+</div></section>
+
+<!-- 13 ─ CLOSE -->
+<section class="slide"><div class="wrap hero">
+  <span class="badge">Thank you</span>
+  <h1 style="font-size:clamp(26px,4.2vw,44px)">Simple Vehicle Property<br>Dashboard App in AAOS</h1>
+  <p class="lede" style="max-width:60ch">Questions welcome on architecture, permission handling, or property availability.</p>
+  <div class="specs" style="margin-top:30px">
+    <a class="spec" style="text-decoration:none;color:inherit" href="module-01-vehicle-property-dashboard/">
+      <div class="l">Source</div><div class="v">Module 01 →</div></a>
+    <a class="spec" style="text-decoration:none;color:inherit" href="module-01-vehicle-property-dashboard/docs/03-architecture.md">
+      <div class="l">Docs</div><div class="v">Architecture →</div></a>
+    <a class="spec" style="text-decoration:none;color:inherit" href="https://developer.android.com/reference/android/car/VehiclePropertyIds">
+      <div class="l">Reference</div><div class="v">VehiclePropertyIds →</div></a>
+  </div>
+</div></section>
+
+</main>
+
+<nav id="nav">
+  <button class="navb" id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg></button>
+  <div id="dots"></div>
+  <button class="navb" id="next" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M8.6 16.6 10 18l6-6-6-6-1.4 1.4 4.6 4.6z"/></svg></button>
+</nav>
+<div id="count"><span id="cur">1</span> / <span id="tot">13</span></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- deck navigation ---------- */
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var dots   = document.getElementById("dots");
+  var prog   = document.getElementById("prog");
+  var i = 0;
+
+  slides.forEach(function(_, n){
+    var b = document.createElement("button");
+    b.className = "dt" + (n === 0 ? " on" : "");
+    b.setAttribute("aria-label", "Go to slide " + (n + 1));
+    b.addEventListener("click", function(){ go(n); });
+    dots.appendChild(b);
+  });
+  var dotEls = Array.prototype.slice.call(dots.children);
+  document.getElementById("tot").textContent = slides.length;
+
+  function go(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle("on", k === i); });
+    dotEls.forEach(function(d, k){ d.classList.toggle("on", k === i); });
+    prog.style.width = ((i + 1) / slides.length * 100) + "%";
+    document.getElementById("cur").textContent = i + 1;
+    document.getElementById("prev").disabled = i === 0;
+    document.getElementById("next").disabled = i === slides.length - 1;
+    slides[i].scrollTop = 0;
+  }
+  document.getElementById("prev").addEventListener("click", function(){ go(i - 1); });
+  document.getElementById("next").addEventListener("click", function(){ go(i + 1); });
+
+  document.addEventListener("keydown", function(e){
+    var t = e.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); go(i + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(i - 1); }
+    else if (e.key === "Home") { e.preventDefault(); go(0); }
+    else if (e.key === "End")  { e.preventDefault(); go(slides.length - 1); }
+  });
+  go(0);
+
+  /* ---------- theme ---------- */
+  var root  = document.documentElement;
+  var tBtn  = document.getElementById("theme");
+  var sun   = '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 105 5 5 5 0 00-5-5m0 8a3 3 0 113-3 3 3 0 01-3 3m0-13a1 1 0 011 1v2a1 1 0 01-2 0V3a1 1 0 011-1m0 17a1 1 0 011 1v2a1 1 0 01-2 0v-2a1 1 0 011-1m10-7a1 1 0 01-1 1h-2a1 1 0 010-2h2a1 1 0 011 1M5 12a1 1 0 01-1 1H2a1 1 0 010-2h2a1 1 0 011 1m13.4-6.4a1 1 0 010 1.4l-1.4 1.4a1 1 0 01-1.4-1.4L17 5.6a1 1 0 011.4 0M8.4 15.6a1 1 0 010 1.4L7 18.4A1 1 0 015.6 17L7 15.6a1 1 0 011.4 0m10 1.4a1 1 0 01-1.4 1.4l-1.4-1.4a1 1 0 011.4-1.4zM8.4 8.4A1 1 0 017 8.4L5.6 7A1 1 0 017 5.6L8.4 7a1 1 0 010 1.4"/></svg>';
+  var moon  = '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 109 9 7 7 0 01-9-9"/></svg>';
+  function paint(){ tBtn.innerHTML = root.dataset.theme === "night" ? sun : moon; }
+  tBtn.addEventListener("click", function(){
+    root.dataset.theme = root.dataset.theme === "night" ? "day" : "night";
+    paint();
+  });
+  paint();
+
+  /* ---------- dashboard replica ---------- */
+  var MAX = 160, CIRC = 515.2, SWEEP = 0.75;   // 270° of a 360° circle
+  var CAPACITY = 15000;                        // INFO_FUEL_CAPACITY, ml
+  var history = [], gear = 4, timer = null;
+
+  var arc = document.getElementById("arc");
+  var spdTxt = document.getElementById("spdTxt");
+  var spark = document.getElementById("spark");
+  var sSpd = document.getElementById("sSpd"), sFuel = document.getElementById("sFuel"), sBatt = document.getElementById("sBatt");
+
+  function css(v){ return getComputedStyle(root).getPropertyValue(v).trim(); }
+
+  function drawSpeed(mph){
+    var frac = Math.max(0, Math.min(1, mph / MAX));
+    // matches DashboardScreen.kt: >0.8 red, >0.55 amber, else orange
+    var col = frac > 0.8 ? css("--red") : frac > 0.55 ? css("--amber") : css("--orange");
+    arc.setAttribute("stroke", col);
+    arc.setAttribute("stroke-dasharray", (CIRC * SWEEP * frac) + " " + CIRC);
+    spdTxt.textContent = mph;
+    document.getElementById("oSpd").textContent = mph + " MPH";
+
+    history.push(mph);
+    if (history.length > 40) history = history.slice(-40);   // takeLast(40)
+    drawSpark();
+  }
+
+  function drawSpark(){
+    if (history.length < 2) { spark.setAttribute("points", ""); return; }
+    var maxV = Math.max(10, Math.max.apply(null, history));  // coerceAtLeast(10)
+    var stepX = 300 / (history.length - 1);
+    spark.setAttribute("points", history.map(function(v, n){
+      return (n * stepX).toFixed(1) + "," + (62 - (v / maxV) * 62).toFixed(1);
+    }).join(" "));
+  }
+
+  function drawFuel(ml){
+    var pct = Math.max(0, Math.min(100, Math.round(ml / CAPACITY * 100)));
+    var low = pct < 15;                                      // the low-fuel rule
+    var bar = document.getElementById("fuelBar");
+    bar.style.width = pct + "%";
+    bar.style.background = low ? css("--red") : css("--green");
+    document.getElementById("fuelTxt").textContent = ml + " ml (" + pct + "%)";
+    document.getElementById("fuelAlert").style.display = low ? "" : "none";
+    document.getElementById("oFuel").textContent = ml + " ml";
+  }
+
+  function drawBatt(pct){
+    var bar = document.getElementById("battBar");
+    bar.style.width = pct + "%";
+    bar.style.background = pct < 15 ? css("--red") : pct < 40 ? css("--amber") : css("--green");
+    document.getElementById("battTxt").textContent = pct + "%";
+    document.getElementById("oBatt").textContent = pct + " %";
+  }
+
+  sSpd.addEventListener("input",  function(){ stop(); drawSpeed(+this.value); });
+  sFuel.addEventListener("input", function(){ drawFuel(+this.value); });
+  sBatt.addEventListener("input", function(){ drawBatt(+this.value); });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".gear"), function(b){
+    b.addEventListener("click", function(){
+      gear = +b.dataset.g;
+      Array.prototype.forEach.call(document.querySelectorAll(".gear"), function(o){
+        o.classList.toggle("act", +o.dataset.g === gear);     // highlight by raw int, as the app does
+      });
+    });
+  });
+
+  function stop(){ if (timer) { clearInterval(timer); timer = null; document.getElementById("drive").textContent = "▶ Simulate a drive"; } }
+
+  document.getElementById("drive").addEventListener("click", function(){
+    if (timer) { stop(); return; }
+    this.textContent = "■ Stop";
+    // a plausible drive profile: pull away, cruise, overtake, slow for a junction
+    var profile = [0,4,11,19,28,36,43,49,54,58,61,63,64,64,63,62,64,68,74,82,91,99,106,
+                   112,116,118,117,114,109,102,94,85,76,68,61,55,50,46,43,41,40,40,41,43,
+                   46,50,55,61,68,74,79,82,84,84,82,78,72,64,55,45,35,25,16,9,4,0];
+    var n = 0;
+    history = [];
+    document.querySelector('.gear[data-g="8"]').click();       // into Drive
+    timer = setInterval(function(){
+      if (n >= profile.length) { document.querySelector('.gear[data-g="4"]').click(); stop(); return; }
+      var v = profile[n++];
+      sSpd.value = v;
+      drawSpeed(v);
+      // fuel drains slowly while driving, as it would
+      var ml = Math.max(0, +sFuel.value - Math.round(v / 26));
+      sFuel.value = ml; drawFuel(ml);
+    }, 165);
+  });
+
+  document.getElementById("reset").addEventListener("click", function(){
+    stop();
+    history = [];
+    sSpd.value = 0; sFuel.value = CAPACITY; sBatt.value = 100;
+    drawSpeed(0); drawFuel(CAPACITY); drawBatt(100);
+    document.querySelector('.gear[data-g="4"]').click();
+  });
+
+  drawSpeed(0); drawFuel(CAPACITY); drawBatt(100);
+
+  // repaint bar/arc colours after a theme flip, since they are set inline
+  tBtn.addEventListener("click", function(){
+    drawSpeed(+sSpd.value); drawFuel(+sFuel.value); drawBatt(+sBatt.value);
+  });
+})();
+</script>
+</body>
+</html>
