@@ -106,9 +106,6 @@ state and testable logic) and demonstrates the **driver-distraction rules** AAOS
 | **Tests** | 23 JUnit tests for the engine, run on the PC without an emulator |
 | **Safety** | Not `distractionOptimized`: blocked while driving, available when parked |
 
-Documentation: [EXPLANATIONS.md](module-02-calculator/EXPLANATIONS.md) (the full write-up) ·
-[COMMANDS.md](module-02-calculator/COMMANDS.md) (PowerShell cheat sheet)
-
 ---
 
 ## Stack
