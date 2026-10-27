@@ -90,9 +90,30 @@ All three **optional** enhancements from the brief were implemented as well:
 
 ---
 
+## Module 02 — Calculator
+
+A simple calculator for AAOS, built step by step from an empty folder. No Car API this time: the module
+covers the fundamentals of an automotive app (project structure, Gradle, the Manifest, Compose UI,
+state and testable logic) and demonstrates the **driver-distraction rules** AAOS enforces.
+
+📁 **[module-02-calculator/](module-02-calculator/)**
+
+| | |
+|---|---|
+| **Keypad** | Landscape 5 × 4 grid, large touch targets, dark theme, color-coded keys |
+| **Logic** | Exact decimal arithmetic (`BigDecimal`), chained operations, `C` / `⌫` / `±` / `%`, division-by-zero handling |
+| **Architecture** | Stateless Compose screen → `ViewModel` → pure-Kotlin engine |
+| **Tests** | 23 JUnit tests for the engine, run on the PC without an emulator |
+| **Safety** | Not `distractionOptimized`: blocked while driving, available when parked |
+
+Documentation: [EXPLANATIONS.md](module-02-calculator/EXPLANATIONS.md) (the full write-up) ·
+[COMMANDS.md](module-02-calculator/COMMANDS.md) (PowerShell cheat sheet)
+
+---
+
 ## Stack
 
-`Android Automotive OS` · `Kotlin` · `Jetpack Compose` · `Material 3` · `Car API` · `Gradle KTS`
+`Android Automotive OS` · `Kotlin` · `Jetpack Compose` · `Material 3` · `Car API` · `Gradle KTS` · `JUnit`
 
 ## Reference
 
