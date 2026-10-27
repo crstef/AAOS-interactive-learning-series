@@ -12,7 +12,7 @@ Detailed explanations of the project are in `EXPLANATIONS.md` (same folder).
 
 ```powershell
 $adb = "D:\Android\Sdk\platform-tools\adb.exe"
-cd D:\Android\Projects\Calculator
+cd D:\Android\repos\AAOS-interactive-learning-series\module-02-calculator
 ```
 
 - `$adb = ...` creates a **variable** holding the path to adb, so you don't have to type the long path every time.
@@ -169,7 +169,7 @@ You can also click **✕** on the emulator window: the effect is the same.
 ## Quick sheet
 
 ```powershell
-$adb = "D:\Android\Sdk\platform-tools\adb.exe"; cd D:\Android\Projects\Calculator
+$adb = "D:\Android\Sdk\platform-tools\adb.exe"; cd D:\Android\repos\AAOS-interactive-learning-series\module-02-calculator
 Start-Process D:\Android\Sdk\emulator\emulator.exe -ArgumentList '@AAOS_Capstone','-gpu','auto'
 & $adb wait-for-device; while ((& $adb shell getprop sys.boot_completed) -ne "1") { Start-Sleep 3 }; "Emulator ready"
 & $adb shell cmd car_service inject-vhal-event 0x11600207 0 0; & $adb shell cmd car_service inject-vhal-event 0x11400400 0 4

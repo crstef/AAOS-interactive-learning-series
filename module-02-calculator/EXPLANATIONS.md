@@ -89,16 +89,24 @@ or `libs.version.toml`, **does not cause an error: it is silently ignored**.
 ### 2.1 Why here: same workspace as the dashboard workshop, but a separate folder
 
 ```
-D:\Android\                       ← shared workspace (everything on D:)
-├── jdk\                          ← Java 17, shared
-├── Sdk\                          ← Android SDK, emulator, adb, shared
-├── .android\avd\AAOS_Capstone    ← the AAOS emulator, shared
-└── Projects\
-    ├── AutomotiveCarPropApp\     ← workshop 1: the dashboard (reference, untouched)
-    └── Calculator\               ← workshop 2: this project (independent)
+D:\Android\                                   ← shared workspace (everything on D:)
+├── jdk\                                      ← Java 17, shared
+├── Sdk\                                      ← Android SDK, emulator, adb, shared
+├── .gradle\                                  ← shared Gradle home (GRADLE_USER_HOME)
+├── .android\avd\AAOS_Capstone                ← the AAOS emulator, shared
+├── Projects\
+│   └── AutomotiveCarPropApp\                 ← workshop 1: the dashboard (reference, untouched)
+└── repos\
+    └── AAOS-interactive-learning-series\     ← git clone of this repository
+        ├── module-01-vehicle-property-dashboard\
+        └── module-02-calculator\             ← workshop 2: this project (the working copy)
 ```
 
-**Why the same parent folder (`D:\Android\Projects`)?**
+The calculator was first built in `D:\Android\Projects\Calculator`, right next to the dashboard, and was then
+moved into this repository as `module-02-calculator`. That folder is now the only working copy:
+edit, build and commit there.
+
+**Why the same workspace (`D:\Android`)?**
 - **One toolchain for everything.** The JDK, the Android SDK, the emulator and adb were already installed
   on `D:` for the first workshop. The calculator uses exactly the same ones: nothing extra to install,
   no second copy of a multi-GB SDK, and `JAVA_HOME` / `ANDROID_HOME` already point to the right places.
@@ -106,7 +114,8 @@ D:\Android\                       ← shared workspace (everything on D:)
   That's what makes the safety demo possible (the calculator blocked while driving, the dashboard still working).
 - **The reference model is right next to it.** We built the calculator by reading and adapting
   `AutomotiveCarPropApp` file by file (`settings.gradle.kts`, `build.gradle.kts`, the Manifest, the wrapper).
-  Having it one folder away made the comparison easy.
+  Having it on the same drive, a few folders away, made the comparison easy. In this repository the same
+  code is [`module-01-vehicle-property-dashboard`](../module-01-vehicle-property-dashboard/).
 - **Shared Gradle home.** Both projects use the same Gradle home, `D:\Android\.gradle`
   (the `GRADLE_USER_HOME` environment variable). Gradle versions and libraries (Compose, AndroidX)
   are downloaded there once and reused by every project in the workspace, and nothing ends up on `C:`.
